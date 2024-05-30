@@ -1,61 +1,90 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.0;
 
+import "./routes/GameEnter.sol";
+import "./routes/GameLeave.sol";
 import "./routes/GameCommit.sol";
-import "./routes/GameController.sol";
 import "./routes/GameReveal.sol";
+
 import "./Game.sol";
 
 contract GameRouter {
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // TODO generate this automatically
+    ///////////////////////////////////////////////////////////////////////////////////////////////
     struct Routes {
+        GameEnter enterRoute;
+        GameLeave leaveRoute;
         GameCommit commitRoute;
-        GameController controllerRoute;
         GameReveal revealRoute;
     }
 
-    GameCommit internal immutable _commit;
-    GameController internal immutable _controller;
-    GameReveal internal immutable _reveal;
+    GameEnter internal immutable _route_enter;
+    GameLeave internal immutable _route_leave;
+    GameCommit internal immutable _route_commit;
+    GameReveal internal immutable _route_reveal;
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // CONFIG
+    ///////////////////////////////////////////////////////////////////////////////////////////////
     /// @notice the timestamp (in seconds) at which the game start, it start in the commit phase
     uint256 internal immutable START_TIME;
     /// @notice the duration of the commit phase in seconds
     uint256 internal immutable COMMIT_PHASE_DURATION;
     /// @notice the duration of the reveal phase in seconds
     uint256 internal immutable REVEAL_PHASE_DURATION;
-    /// @notice the max number of level a cell can reach in the game
-
-    /// @notice the number of moves a hash represent, after that players make use of furtherMoves
-    uint8 internal constant MAX_NUM_MOVES_PER_HASH = 32;
+    /// @notice the Character NFT Collection
+    IERC721 internal immutable CHARACTERS;
+    ///////////////////////////////////////////////////////////////////////////////////////////////
 
     constructor(Routes memory routes, Game.Config memory config) {
-        _commit = routes.commitRoute;
-        _controller = routes.controllerRoute;
-        _reveal = routes.revealRoute;
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        // TODO generate this automatically
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        _route_enter = routes.enterRoute;
+        _route_leave = routes.leaveRoute;
+        _route_commit = routes.commitRoute;
+        _route_reveal = routes.revealRoute;
+        ///////////////////////////////////////////////////////////////////////////////////////////
 
         START_TIME = config.startTime;
         COMMIT_PHASE_DURATION = config.commitPhaseDuration;
         REVEAL_PHASE_DURATION = config.revealPhaseDuration;
+        CHARACTERS = config.characters;
     }
 
-    function commit(uint256, bytes24, address) external payable {
-        _delegateTo(address(_commit));
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // TODO generate this automatically
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    function enter(uint256, address payable) external {
+        _delegateTo(address(_route_enter));
     }
 
-    function join(uint256) external {
-        _delegateTo(address(_controller));
+    function leave(uint256, address) external {
+        _delegateTo(address(_route_leave));
+    }
+
+    function commit(uint256, bytes24, address payable) external payable {
+        _delegateTo(address(_route_commit));
     }
 
     function reveal(uint256, Game.Action[] calldata, bytes32) external {
-        _delegateTo(address(_reveal));
+        _delegateTo(address(_route_reveal));
     }
+    ///////////////////////////////////////////////////////////////////////////////////////////////
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // INTERNAL
+    ///////////////////////////////////////////////////////////////////////////////////////////////
     function _getConfig() internal view returns (Game.Config memory) {
         return
             Game.Config({
                 startTime: START_TIME,
                 commitPhaseDuration: COMMIT_PHASE_DURATION,
-                revealPhaseDuration: REVEAL_PHASE_DURATION
+                revealPhaseDuration: REVEAL_PHASE_DURATION,
+                characters: CHARACTERS
             });
     }
 
